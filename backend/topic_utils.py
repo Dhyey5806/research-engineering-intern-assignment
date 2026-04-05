@@ -4,6 +4,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer, ENGLISH_STOP_WORDS
 from sklearn.metrics.pairwise import cosine_similarity
 import traceback
 import re
+import umap
+import datamapplot
 
 INTERNET_GARBAGE = [
     'amp', 'http', 'https', 'www', 'com', 'reddit', 'thread', 'post', 'comment', 
@@ -25,10 +27,9 @@ def clean_text(text):
 def generate_topic_trends(df, model, num_clusters=4):
     try:
         if len(df) == 0:
-            return {"labels": [], "datasets": [], "top_themes": []}
+            return {"labels": [], "datasets": [], "top_themes": [], "datamap_html": ""}
 
         df = df.copy()
-        
         actual_clusters = min(num_clusters, len(df))
 
         titles = df['title'].apply(clean_text)
@@ -40,11 +41,10 @@ def generate_topic_trends(df, model, num_clusters=4):
         try:
             tfidf_matrix = vectorizer.fit_transform(combined_texts)
             scores = tfidf_matrix.sum(axis=0).A1
-            
             actual_clusters = min(actual_clusters, len(scores))
             
             if actual_clusters == 0:
-                return {"labels": [], "datasets": [], "top_themes": []}
+                return {"labels": [], "datasets": [], "top_themes": [], "datamap_html": ""}
                 
             top_indices = scores.argsort()[-actual_clusters:][::-1]
             feature_names = vectorizer.get_feature_names_out()
@@ -53,28 +53,53 @@ def generate_topic_trends(df, model, num_clusters=4):
             suggested_words = [f"Theme {i+1}" for i in range(actual_clusters)]
 
         if len(suggested_words) == 0:
-            return {"labels": [], "datasets": [], "top_themes": []}
+            return {"labels": [], "datasets": [], "top_themes": [], "datamap_html": ""}
 
         theme_embeddings = model.encode(suggested_words, show_progress_bar=False)
         post_embeddings = model.encode(combined_texts, show_progress_bar=False)
 
         similarities = cosine_similarity(post_embeddings, theme_embeddings)
-        
-        df['cluster_id'] = np.argmax(similarities, axis=1)
+        cluster_ids = np.argmax(similarities, axis=1)
+        df['cluster_id'] = cluster_ids
 
         cluster_names = {i: suggested_words[i].title() for i in range(actual_clusters)}
         top_themes_list = [cluster_names[i] for i in range(actual_clusters)]
+
+        # --- THE ML EMBEDDING PROJECTION (DATAMAPPLOT) ---
+        datamap_html = ""
+        try:
+            # 1. Reduce 384D to 2D
+            reducer = umap.UMAP(n_neighbors=min(15, len(post_embeddings)-1), min_dist=0.1, n_components=2, random_state=42)
+            data_map_coords = reducer.fit_transform(post_embeddings)
+
+            # 2. Assign text labels
+            labels = np.array([cluster_names.get(cid, "Uncategorized") for cid in cluster_ids])
+            hover_text = df['title'].fillna("No Title").apply(lambda x: x[:100] + "...").tolist()
+
+            # 3. Create the interactive map
+            plot = datamapplot.create_interactive_plot(
+                data_map_coords, 
+                labels,
+                hover_text=hover_text,
+                title="Semantic Narrative Landscape",
+                sub_title="High-dimensional clustering of posts based on linguistic similarity.",
+                logo=None
+            )
+            # 4. Save to string
+            datamap_html = str(plot)
+        except Exception as e:
+            print(f"Datamapplot failed: {e}")
+            datamap_html = ""
+        # ------------------------------------------------
 
         df['date'] = pd.to_datetime(df.get('date', pd.Series()), errors='coerce')
         df = df.dropna(subset=['date'])
 
         if len(df) == 0:
-            return {"labels": [], "datasets": [], "top_themes": []}
+            return {"labels": [], "datasets": [], "top_themes": [], "datamap_html": datamap_html}
 
         df['date_str'] = df['date'].dt.strftime('%Y-%m-%d')
-        
         daily_counts = df.groupby(['date_str', 'cluster_id']).size().unstack(fill_value=0)
-
         all_dates = sorted(df['date_str'].unique())
         datasets = []
 
@@ -99,8 +124,13 @@ def generate_topic_trends(df, model, num_clusters=4):
                 "tension": 0.4
             })
 
-        return {"labels": all_dates, "datasets": datasets, "top_themes": top_themes_list}
+        return {
+            "labels": all_dates, 
+            "datasets": datasets, 
+            "top_themes": top_themes_list,
+            "datamap_html": datamap_html # Send it to FastAPI
+        }
 
     except Exception as e:
         traceback.print_exc()
-        return {"labels": [], "datasets": [], "top_themes": []}
+        return {"labels": [], "datasets": [], "top_themes": [], "datamap_html": ""}
