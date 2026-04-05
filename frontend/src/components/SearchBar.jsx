@@ -1,60 +1,61 @@
 import React from 'react';
+import { Search } from 'lucide-react';
 
 const SearchBar = ({ query, setQuery, startDate, setStartDate, endDate, setEndDate, onSearch, loading, source }) => {
   const isQueryValid = query.trim().length >= 3;
 
   return (
-    <form onSubmit={onSearch} style={{ marginBottom: '2rem', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-      <input 
-        type="text" 
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={source === 'reddit' ? "Search Reddit narratives (e.g., 'trump')..." : "Search Global News (e.g., 'crypto scam')..."} 
-        style={{ width: '350px', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #ccc', outline: 'none' }}
-      />
-      
-      {/* Hide the date filters if the source is NewsAPI */}
+    <form onSubmit={onSearch} className="flex flex-wrap items-end gap-3">
+      <div className="flex-1 min-w-[300px]">
+        <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">
+          Intelligence Query
+        </label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={source === 'reddit' ? "Search narrative signals (e.g., 'election interference')..." : "Scan global intelligence feeds (e.g., 'crypto fraud')..."}
+            className="echo-input pl-10"
+          />
+        </div>
+      </div>
+
       {source === 'reddit' && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <label style={{ fontSize: '14px', color: '#555', fontWeight: 'bold' }}>From:</label>
-            <input 
-              type="date" 
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">
+              From
+            </label>
+            <input
+              type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              style={{ padding: '9px', borderRadius: '6px', border: '1px solid #ccc' }}
+              className="echo-input w-[160px]"
             />
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <label style={{ fontSize: '14px', color: '#555', fontWeight: 'bold' }}>To:</label>
-            <input 
-              type="date" 
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">
+              To
+            </label>
+            <input
+              type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              style={{ padding: '9px', borderRadius: '6px', border: '1px solid #ccc' }}
+              className="echo-input w-[160px]"
             />
           </div>
         </>
       )}
 
-      <button 
-        type="submit" 
-        disabled={loading || !isQueryValid} 
-        style={{ 
-          padding: '10px 24px', 
-          fontSize: '16px', 
-          cursor: isQueryValid ? 'pointer' : 'not-allowed', 
-          borderRadius: '6px', 
-          backgroundColor: isQueryValid ? '#3182ce' : '#cccccc', 
-          color: 'white', 
-          border: 'none',
-          marginLeft: '10px',
-          fontWeight: 'bold',
-          transition: '0.2s'
-        }}
+      <button
+        type="submit"
+        disabled={loading || !isQueryValid}
+        className="echo-btn-primary"
       >
-        {loading ? 'Searching...' : 'Search'}
+        <Search className="w-4 h-4" />
+        {loading ? 'Scanning...' : 'Run Analysis'}
       </button>
     </form>
   );

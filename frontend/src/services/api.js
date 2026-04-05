@@ -1,4 +1,3 @@
-// Add 'source' to the parameters
 export const fetchSearchResults = async (query, startDate, endDate, limit = 200, source = 'reddit') => {
   let url = `http://127.0.0.1:8000/api/search?query=${encodeURIComponent(query)}&limit=${limit}&source=${source}`;
   if (source === 'reddit') {

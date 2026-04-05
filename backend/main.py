@@ -116,7 +116,7 @@ async def semantic_search(query: str = "", source: str = "reddit", limit: int = 
             similarity_score = float(util.cos_sim(query_vector, best_vector).item())
             
             if similarity_score < 0.45:
-                warning_msg = f"Warning: Low confidence match (Score: {similarity_score:.2f})."
+                warning_msg = f"Warning: There is less matches with your query please check your query again."
                 
             matching_rows = df.iloc[valid_indices]
             matching_rows = filter_by_date(matching_rows, start_date, end_date)
@@ -166,7 +166,7 @@ async def get_topics(query: str = "", source: str = "reddit", limit: int = 200, 
             similarity_score = float(util.cos_sim(query_vector, best_vector).item())
             
             if similarity_score < 0.45:
-                warning_msg = f"Warning: Low confidence match (Score: {similarity_score:.2f})."
+                warning_msg = f"Warning: There is less matches with your query please check your query again."
                 
             matching_rows = df.iloc[valid_indices]
             matching_rows = filter_by_date(matching_rows, start_date, end_date)

@@ -1,6 +1,6 @@
 export const getTimelineData = (results) => {
   if (!results || results.length === 0) return { labels: [], values: [] };
-  
+
   const counts = {};
   results.forEach(post => {
     if (post.date) {
@@ -8,7 +8,7 @@ export const getTimelineData = (results) => {
       counts[date] = (counts[date] || 0) + 1;
     }
   });
-  
+
   const sortedDates = Object.keys(counts).sort();
   return {
     labels: sortedDates,

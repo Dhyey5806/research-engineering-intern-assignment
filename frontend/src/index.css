@@ -1,0 +1,210 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 20% 95%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 160 84% 39%;
+
+    --radius: 0.75rem;
+
+    /* EchoScope custom tokens */
+    --slate-deep: 222 47% 11%;
+    --slate-900: 222 47% 11%;
+    --slate-800: 217 33% 17%;
+    --slate-700: 215 25% 27%;
+    --slate-600: 215 20% 40%;
+    --slate-500: 215 16% 47%;
+    --slate-400: 215 14% 63%;
+    --slate-300: 214 20% 80%;
+    --slate-200: 214 32% 91%;
+    --slate-100: 210 20% 95%;
+    --slate-50: 210 20% 98%;
+
+    --emerald-500: 160 84% 39%;
+    --emerald-400: 158 64% 52%;
+    --emerald-300: 156 50% 68%;
+    --emerald-600: 161 94% 30%;
+    --emerald-glow: 160 84% 39%;
+
+    --surface-elevated: 0 0% 100%;
+    --surface-sunken: 210 20% 96%;
+
+    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.06);
+    --shadow-elevated: 0 4px 6px -1px hsl(0 0% 0% / 0.07), 0 2px 4px -2px hsl(0 0% 0% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.08), 0 4px 6px -4px hsl(0 0% 0% / 0.04);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    margin: 0;
+  }
+}
+
+@layer components {
+  .echo-card {
+    @apply bg-card rounded-xl border border-border p-6;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .echo-card:hover {
+    box-shadow: var(--shadow-elevated);
+    border-color: hsl(var(--slate-300));
+  }
+
+  .echo-section-title {
+    @apply text-lg font-semibold text-foreground tracking-tight;
+  }
+
+  .echo-section-subtitle {
+    @apply text-sm text-muted-foreground leading-relaxed;
+  }
+
+  .echo-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  .echo-badge-emerald {
+    @apply echo-badge;
+    background: hsl(var(--emerald-500) / 0.1);
+    color: hsl(var(--emerald-600));
+  }
+
+  .echo-badge-slate {
+    @apply echo-badge;
+    background: hsl(var(--slate-200));
+    color: hsl(var(--slate-600));
+  }
+
+  .echo-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200;
+    background: hsl(var(--slate-deep));
+    color: hsl(var(--primary-foreground));
+  }
+  .echo-btn-primary:hover {
+    background: hsl(var(--slate-800));
+    box-shadow: var(--shadow-elevated);
+    transform: translateY(-1px);
+  }
+  .echo-btn-primary:active {
+    transform: translateY(0);
+  }
+  .echo-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .echo-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200;
+    background: hsl(var(--surface-elevated));
+    border-color: hsl(var(--border));
+    color: hsl(var(--foreground));
+  }
+  .echo-btn-secondary:hover {
+    background: hsl(var(--slate-100));
+    border-color: hsl(var(--slate-300));
+  }
+
+  .echo-btn-accent {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200;
+    background: hsl(var(--emerald-500));
+    color: hsl(0 0% 100%);
+  }
+  .echo-btn-accent:hover {
+    background: hsl(var(--emerald-600));
+    box-shadow: 0 0 20px hsl(var(--emerald-500) / 0.3);
+    transform: translateY(-1px);
+  }
+
+  .echo-input {
+    @apply w-full px-4 py-2.5 rounded-lg text-sm border transition-all duration-200 outline-none;
+    background: hsl(var(--surface-elevated));
+    border-color: hsl(var(--border));
+    color: hsl(var(--foreground));
+  }
+  .echo-input:focus {
+    border-color: hsl(var(--emerald-400));
+    box-shadow: 0 0 0 3px hsl(var(--emerald-500) / 0.1);
+  }
+  .echo-input::placeholder {
+    color: hsl(var(--slate-400));
+  }
+
+  .echo-toggle-group {
+    @apply inline-flex rounded-lg p-1;
+    background: hsl(var(--slate-100));
+  }
+  .echo-toggle-btn {
+    @apply px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer;
+    color: hsl(var(--slate-500));
+  }
+  .echo-toggle-btn-active {
+    @apply echo-toggle-btn;
+    background: hsl(var(--surface-elevated));
+    color: hsl(var(--foreground));
+    box-shadow: var(--shadow-card);
+    font-weight: 600;
+  }
+
+  .echo-ai-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium;
+    background: linear-gradient(135deg, hsl(var(--emerald-500) / 0.1), hsl(160 84% 39% / 0.05));
+    color: hsl(var(--emerald-600));
+    border: 1px solid hsl(var(--emerald-500) / 0.2);
+  }
+
+  .echo-live-dot {
+    @apply inline-block w-2 h-2 rounded-full;
+    background: hsl(var(--emerald-500));
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 hsl(160 84% 39% / 0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 6px hsl(160 84% 39% / 0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

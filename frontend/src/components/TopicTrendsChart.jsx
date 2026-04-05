@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend } from 'chart.js';
+import { Layers, Map, BarChart2 } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler, Legend);
 
 const TopicTrendsChart = ({ data, summaryText, onClusterChange, currentClusters, loading }) => {
   const [localClusters, setLocalClusters] = useState(currentClusters);
-  const [viewMode, setViewMode] = useState('chart'); // 'chart' or 'map'
+  const [viewMode, setViewMode] = useState('chart');
 
   if (!data || !data.labels || data.labels.length === 0) {
     return (
-      <div style={{ border: '1px solid #eaeaea', padding: '1.5rem', marginBottom: '2rem', borderRadius: '12px', backgroundColor: '#ffffff', textAlign: 'center' }}>
-        <h2 style={{ margin: 0, color: '#2c3e50', marginBottom: '10px' }}>Narrative Themes & Embeddings</h2>
-        <p style={{ color: '#718096' }}>Not enough data available to generate clusters.</p>
+      <div className="echo-card animate-fade-in">
+        <div className="flex items-center gap-2 mb-1">
+          <Layers className="w-5 h-5 text-emerald-500" />
+          <h2 className="echo-section-title">Narrative Themes & Embeddings</h2>
+        </div>
+        <p className="echo-section-subtitle mt-2">
+          Insufficient data to generate semantic clusters.
+        </p>
       </div>
     );
   }
@@ -22,82 +28,117 @@ const TopicTrendsChart = ({ data, summaryText, onClusterChange, currentClusters,
   };
 
   const options = {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'top', labels: { padding: 20, font: { family: 'sans-serif', size: 12 } } }, tooltip: { mode: 'index', intersect: false } },
-    scales: { y: { stacked: true, beginAtZero: true } },
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          padding: 20,
+          font: { family: 'Inter', size: 12 },
+          usePointStyle: true,
+          pointStyle: 'circle',
+        }
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        backgroundColor: 'hsl(222, 47%, 11%)',
+        titleFont: { family: 'Inter', size: 12, weight: 'bold' },
+        bodyFont: { family: 'Inter', size: 11 },
+        padding: 12,
+        cornerRadius: 8,
+      }
+    },
+    scales: {
+      y: {
+        stacked: true,
+        beginAtZero: true,
+        grid: { color: 'hsla(214, 32%, 91%, 0.5)' },
+        ticks: { font: { family: 'Inter', size: 11 }, color: 'hsl(215, 16%, 47%)' }
+      },
+      x: {
+        grid: { color: 'hsla(214, 32%, 91%, 0.5)' },
+        ticks: { font: { family: 'Inter', size: 11 }, color: 'hsl(215, 16%, 47%)' }
+      }
+    },
     interaction: { mode: 'nearest', axis: 'x', intersect: false }
   };
 
   return (
-    <div style={{ border: '1px solid #eaeaea', padding: '1.5rem', marginBottom: '2rem', borderRadius: '12px', backgroundColor: '#ffffff', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.02)', position: 'relative' }}>
-      
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <h2 style={{ margin: 0, color: '#2c3e50' }}>Narrative Themes & Embeddings</h2>
-        
-        {/* VIEW TOGGLE */}
-        <div style={{ display: 'flex', backgroundColor: '#e2e8f0', borderRadius: '8px', padding: '4px' }}>
+    <div className="echo-card animate-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Layers className="w-5 h-5 text-emerald-500" />
+          <h2 className="echo-section-title">Narrative Themes & Embeddings</h2>
+        </div>
+
+        <div className="echo-toggle-group">
           <button
             onClick={() => setViewMode('chart')}
-            style={{ padding: '6px 16px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: viewMode === 'chart' ? '#ffffff' : 'transparent', color: viewMode === 'chart' ? '#3182ce' : '#718096', boxShadow: viewMode === 'chart' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s', fontSize: '13px' }}
+            className={viewMode === 'chart' ? 'echo-toggle-btn-active' : 'echo-toggle-btn'}
           >
+            <BarChart2 className="w-3.5 h-3.5 inline mr-1" />
             Volume Timeline
           </button>
           <button
             onClick={() => setViewMode('map')}
-            style={{ padding: '6px 16px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: viewMode === 'map' ? '#ffffff' : 'transparent', color: viewMode === 'map' ? '#3182ce' : '#718096', boxShadow: viewMode === 'map' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s', fontSize: '13px' }}
+            className={viewMode === 'map' ? 'echo-toggle-btn-active' : 'echo-toggle-btn'}
           >
-            Datamapplot (UMAP)
+            <Map className="w-3.5 h-3.5 inline mr-1" />
+            UMAP Projection
           </button>
         </div>
       </div>
 
-      <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #edf2f7', textAlign: 'left' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-          <label style={{ fontWeight: 'bold', color: '#4a5568', fontSize: '14px' }}>Number of Topic Clusters:</label>
-          <span style={{ fontWeight: 'bold', color: '#805ad5', fontSize: '15px' }}>{localClusters}</span>
+      {/* Semantic Resolution Controls */}
+      <div className="flex flex-wrap items-center gap-4 mb-4 p-3 rounded-lg bg-muted/30 border border-border">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground font-medium">Semantic Resolution:</span>
+          <span className="font-mono text-foreground font-semibold">{localClusters}</span>
         </div>
-        
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <input 
-            type="range" min="2" max="8" value={localClusters} 
-            onChange={(e) => setLocalClusters(parseInt(e.target.value))}
-            style={{ flex: 1, cursor: loading ? 'wait' : 'pointer', accentColor: '#805ad5', opacity: loading ? 0.5 : 1 }}
-            disabled={loading} 
-          />
-          <button 
-            onClick={handleApply}
-            disabled={loading} 
-            style={{ padding: '8px 16px', backgroundColor: loading ? '#b794f6' : '#805ad5', color: 'white', border: 'none', borderRadius: '6px', cursor: loading ? 'wait' : 'pointer', fontWeight: 'bold', transition: '0.2s', width: '130px' }}
-          >
-            {loading ? 'Processing...' : 'Re-Cluster'}
-          </button>
-        </div>
+        <input
+          type="range"
+          min="2"
+          max="10"
+          value={localClusters}
+          onChange={(e) => setLocalClusters(parseInt(e.target.value))}
+          className="flex-1 min-w-[120px] accent-emerald-500"
+          style={{ opacity: loading ? 0.5 : 1 }}
+          disabled={loading}
+        />
+        <button
+          onClick={handleApply}
+          disabled={loading}
+          className="echo-btn-accent text-xs"
+        >
+          {loading ? 'Processing...' : 'Re-Cluster'}
+        </button>
       </div>
 
-      {/* RENDER THE SELECTED VIEW */}
-      <div style={{ height: '500px', width: '100%', position: 'relative', opacity: loading ? 0.5 : 1, transition: 'opacity 0.3s' }}>
+      {/* Summaries */}
+      {summaryText && (
+        <div className="mb-4 p-4 rounded-lg bg-muted/50 border border-border">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="echo-ai-badge">✦ AI Analysis</span>
+          </div>
+          <p className="text-sm text-foreground leading-relaxed">{summaryText}</p>
+        </div>
+      )}
+
+      <div style={{ height: '400px' }}>
         {viewMode === 'chart' ? (
           <Line data={data} options={options} />
         ) : (
-          data.datamap_html ? (
-            <iframe 
-              srcDoc={data.datamap_html} 
-              style={{ width: '100%', height: '100%', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-              title="Datamapplot Embeddings"
-            />
-          ) : (
-             <div style={{ height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#718096', backgroundColor: '#f8f9fa', border: '1px dashed #cbd5e0', borderRadius: '8px' }}>
-               No embedding data available.
-             </div>
-          )
+          <div className="flex items-center justify-center h-full rounded-lg bg-muted/20 border border-border">
+            <div className="text-center">
+              <Map className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">UMAP Embedding Visualization</p>
+              <p className="text-xs text-muted-foreground mt-1">Requires backend datamapplot rendering</p>
+            </div>
+          </div>
         )}
       </div>
-      
-      {summaryText && (
-        <p style={{ textAlign: 'left', color: '#2d3748', marginTop: '1.5rem', padding: '1rem', backgroundColor: '#faf5ff', borderRadius: '6px', borderLeft: '4px solid #805ad5', fontSize: '15px', lineHeight: '1.5' }}>
-          <strong>AI Analysis:</strong> {summaryText}
-        </p>
-      )}
     </div>
   );
 };
