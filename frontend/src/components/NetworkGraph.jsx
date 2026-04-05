@@ -1,9 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 
 const NetworkGraph = ({ graphData }) => {
   const [nodeCount, setNodeCount] = useState(50);
   const [hiddenNodes, setHiddenNodes] = useState(new Set());
+  
+  // 1. Create a reference to control the graph's camera and physics
+  const fgRef = useRef();
 
   const displayData = useMemo(() => {
     if (!graphData || !graphData.nodes) return { nodes: [], links: [] };
@@ -22,6 +25,21 @@ const NetworkGraph = ({ graphData }) => {
     return { nodes: visibleNodes, links: visibleLinks };
   }, [graphData, nodeCount, hiddenNodes]);
 
+  // 2. The "Make it look good in the first frame" hook
+  useEffect(() => {
+    if (fgRef.current && displayData.nodes.length > 0) {
+      // Step A: Spread the nodes out so they aren't a tiny clump
+      fgRef.current.d3Force('charge').strength(-250); // Stronger repulsion
+      fgRef.current.d3Force('link').distance(50);     // Longer links
+
+      // Step B: Let the physics settle for a split second, then smoothly auto-zoom 
+      // to frame the exact dimensions of the network, leaving a 50px padding.
+      setTimeout(() => {
+        fgRef.current?.zoomToFit(400, 50); 
+      }, 800);
+    }
+  }, [displayData]);
+
   const handleNodeClick = (node) => {
     const newHidden = new Set(hiddenNodes);
     newHidden.add(node.id);
@@ -31,6 +49,11 @@ const NetworkGraph = ({ graphData }) => {
   const handleReset = () => {
     setHiddenNodes(new Set());
     setNodeCount(50);
+    
+    // Also reset the camera when they reset the view
+    setTimeout(() => {
+      fgRef.current?.zoomToFit(400, 50);
+    }, 100);
   };
 
   if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
@@ -66,14 +89,18 @@ const NetworkGraph = ({ graphData }) => {
         />
       </div>
       
-      <div style={{ height: '500px', width: '100%', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fafbfc' }}>
+      {/* 3. Centered flex wrapper for the canvas */}
+      <div style={{ height: '500px', width: '100%', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fafbfc', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <ForceGraph2D
+          ref={fgRef} // Attach the camera reference here
           graphData={displayData}
           nodeLabel="id"
           nodeVal={node => Math.max(node.val * 300, 4)}
           nodeColor={node => node.val > 0.05 ? '#e53e3e' : '#3182ce'}
           onNodeClick={handleNodeClick}
-          width={800} height={500} cooldownTicks={100}
+          width={800} 
+          height={500} 
+          cooldownTicks={100}
           linkColor={() => 'rgba(203, 213, 225, 0.4)'}
         />
       </div>

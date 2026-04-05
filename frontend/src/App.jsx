@@ -6,6 +6,7 @@ import NetworkGraph from './components/NetworkGraph';
 import TopicTrendsChart from './components/TopicTrendsChart';
 import { fetchSearchResults, fetchTopicTrends } from './services/api';
 import { getTimelineData, getSubredditData } from './utils/dataFormatters';
+import ChatBot from './components/ChatBot';
 
 function App() {
   const [query, setQuery] = useState('');
@@ -38,6 +39,7 @@ function App() {
       setWarning(data.warning || null);
     } catch (err) {
       setError("Failed to fetch initial data.");
+      console.log(err);
     } finally {
       setLoading(false);
     }
@@ -51,6 +53,7 @@ function App() {
       setSummaries(prev => ({ ...prev, topics: data.topic_summary }));
     } catch (err) {
       setError("Failed to fetch topic clusters.");
+      console.log(err);
     } finally {
       setTopicsLoading(false);
     }
@@ -65,6 +68,7 @@ function App() {
       setSummaries(prev => ({ ...prev, topics: data.topic_summary }));
     } catch (err) {
       setError("Failed to recalculate clusters.");
+      console.log(err);
     } finally {
       setTopicsLoading(false);
     }
@@ -101,7 +105,7 @@ function App() {
             Showing {results.length} semantic matches for "{query}"
           </h3>
           
-          <TimelineChart data={timelineData} summaryText={summaries.timeline} />
+          <TimelineChart data={timelineData} rawResults={results} summaryText={summaries.timeline} />
           <CommunityChart data={subredditData} summaryText={summaries.community} />
           <NetworkGraph graphData={graphData} summaryText={summaries.network} />
 
@@ -128,6 +132,15 @@ function App() {
             )}
           </div>
         </div>
+      )}
+      {results.length > 0 && !loading && (
+        <ChatBot 
+          rawResults={results} 
+          timelineData={timelineData}
+          subredditData={subredditData}
+          graphData={graphData}
+          topicData={topicData}
+        />
       )}
     </div>
   );

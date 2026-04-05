@@ -11,10 +11,14 @@ import traceback
 from graph_utils import build_network_graph
 from topic_utils import generate_topic_trends
 from summary_utils import generate_main_summaries, generate_topic_summary
+from pydantic import BaseModel
+from typing import List, Dict, Any
+from chat_utils import get_chat_response
 
 df = None
 index = None
 model = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,6 +51,30 @@ def filter_by_date(matching_rows, start_date, end_date):
         filtered_df = filtered_df[filtered_df['date'] <= pd.to_datetime(end_date) + pd.Timedelta(days=1)]
     return filtered_df
 
+class ChatRequest(BaseModel):
+    history: List[Dict[str, str]]
+    context: List[Dict[str, Any]]
+    timeline_data: Dict[str, Any]
+    subreddit_data: Dict[str, Any]
+    graph_data: Dict[str, Any]
+    topic_data: Optional[Dict[str, Any]] = None
+
+@app.post("/api/chat")
+async def chat_endpoint(request: ChatRequest):
+    try:
+        answer = get_chat_response(
+            request.history, 
+            request.context,
+            request.timeline_data,
+            request.subreddit_data,
+            request.graph_data,
+            request.topic_data
+        )
+        return {"response": answer}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @app.get("/api/search")
 async def semantic_search(query: str = "", limit: int = 500, start_date: Optional[str] = None, end_date: Optional[str] = None):
     clean_query = query.strip()

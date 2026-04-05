@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import json
+import re
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -14,6 +15,7 @@ client = OpenAI(
 
 def get_deepseek_json(prompt):
     if not client:
+        print("ERROR: OpenRouter API key missing.")
         return None
     try:
         response = client.chat.completions.create(
@@ -21,31 +23,37 @@ def get_deepseek_json(prompt):
             messages=[
                 {
                     "role": "system", 
-                    "content": "You are a Senior Threat Intelligence Analyst. You output raw, valid JSON only. Do not use markdown blocks like ```json."
+                    "content": "You are a Senior Threat Intelligence Analyst. You output ONLY raw, valid JSON. No conversational filler. No markdown."
                 },
                 {
                     "role": "user", 
                     "content": prompt
                 }
             ],
+            temperature=0.0, # Forces deterministic, robotic output
+            max_tokens=250,  # ECONOMIC GUARDRAIL: Prevents 402 Token Limit Errors
             extra_body={"reasoning": {"enabled": False}} 
         )
         content = response.choices[0].message.content.strip()
         
-        if content.startswith('```json'):
-            content = content[7:-3].strip()
-        elif content.startswith('```'):
-            content = content[3:-3].strip()
+        # BULLETPROOF JSON EXTRACTOR using Regex
+        # This rips out the JSON object even if the LLM surrounds it with conversational garbage
+        match = re.search(r'\{.*\}', content, re.DOTALL)
+        if match:
+            json_str = match.group(0)
+            return json.loads(json_str)
+        else:
+            print(f"DEEPSEEK JSON PARSE FAILED. Raw Output: {content}")
+            return None
             
-        return json.loads(content)
     except Exception as e:
         print(f"DEEPSEEK API ERROR: {str(e)}")
         return None
 
 def generate_main_summaries(df, query):
     fallback = {
-        "timeline": "Volume metrics calculated successfully.", 
-        "community": "Community engagement metrics calculated successfully."
+        "timeline": "Unable to generate AI analysis. Check backend console for API limits.", 
+        "community": "Unable to generate AI analysis. Check backend console for API limits."
     }
     
     if len(df) == 0 or not client: 
@@ -82,7 +90,7 @@ def generate_main_summaries(df, query):
     return res if res and "timeline" in res else fallback
 
 def generate_topic_summary(query, top_themes):
-    fallback = "Narrative themes calculated successfully."
+    fallback = "Unable to generate AI analysis. Check backend console for API limits."
     if not client or not top_themes: 
         return fallback
 
