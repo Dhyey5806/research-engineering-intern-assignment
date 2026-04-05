@@ -153,14 +153,37 @@ async def get_topics(query: str = "", source: str = "reddit", limit: int = 200, 
         
         else:
             query_vector = model.encode([clean_query])
-            D, I = index.search(query_vector, limit)
+            
+            D, I = index.search(query_vector, limit) 
             valid_indices = [idx for idx in I[0] if idx != -1]
             
             if not valid_indices:
-                return {"topics": {"labels": [], "datasets": [], "top_themes": []}, "topic_summary": ""}
+                 return {"query": query, "results_count": 0, "results": [], "graph": {"nodes": [], "links": []}, "summaries": empty_summaries, "warning": None}
+                
+            best_match_row = df.iloc[valid_indices[0]]
+            best_text = str(best_match_row.get('title', '')) + " " + str(best_match_row.get('selftext', ''))
+            best_vector = model.encode([best_text])
+            similarity_score = float(util.cos_sim(query_vector, best_vector).item())
+            
+            if similarity_score < 0.45:
+                warning_msg = f"Warning: Low confidence match (Score: {similarity_score:.2f})."
                 
             matching_rows = df.iloc[valid_indices]
             matching_rows = filter_by_date(matching_rows, start_date, end_date)
+            D_graph, I_graph = index.search(query_vector, 4000)
+            valid_indices_graph = [idx for idx in I_graph[0] if idx != -1]
+            matching_rows_graph = df.iloc[valid_indices_graph]
+            matching_rows_graph = filter_by_date(matching_rows_graph, start_date, end_date)
+
+            graph_data = build_network_graph(matching_rows_graph)
+
+        results = matching_rows.to_dict(orient='records')
+        
+        if source == "news":
+            graph_data = build_network_graph(matching_rows)
+            
+        summaries = generate_main_summaries(matching_rows, query, source)
+        summaries["topics"] = "Waiting for Deep Narrative Analysis execution..."
         
         topic_data = generate_topic_trends(matching_rows, model, clusters)
         topic_summary_text = generate_topic_summary(query, topic_data.get('top_themes', []))

@@ -1,45 +1,60 @@
 import networkx as nx
-from itertools import combinations
 
 def build_network_graph(results_df):
     G = nx.Graph()
-    items_to_authors = {}
     
     for _, row in results_df.iterrows():
-        author = row['author']
-        if not author:
+        author = row.get('author')
+        subreddit = row.get('subreddit')
+        
+        if not author or author == '[deleted]' or not subreddit:
             continue
             
-        tags = [t.strip() for t in str(row.get('hashtags', '')).split(',') if t.strip()]
-        domain = row.get('domain')
+        G.add_node(author, type='author')
+        G.add_node(subreddit, type='subreddit')
         
-        for tag in tags:
-            items_to_authors.setdefault(f"tag:{tag}", set()).add(author)
-        if domain and domain != 'reddit.com':
-            items_to_authors.setdefault(f"domain:{domain}", set()).add(author)
+        if G.has_edge(author, subreddit):
+            G[author][subreddit]['weight'] += 1
+        else:
+            G.add_edge(author, subreddit, weight=1)
 
-    for item, authors in items_to_authors.items():
-        if len(authors) > 1:
-            for u, v in combinations(authors, 2):
-                if G.has_edge(u, v):
-                    G[u][v]['weight'] += 1
-                else:
-                    G.add_edge(u, v, weight=1)
+    if G.number_of_nodes() == 0:
+        return {"nodes": [], "links": []}
 
+    # === THE PRUNING SHEARS ===
+    # Delete any author who only posted in 1 subreddit. They are not bridges.
+    authors = [n for n, attr in G.nodes(data=True) if attr['type'] == 'author']
+    for author in authors:
+        if G.degree(author) < 2:
+            G.remove_node(author)
+
+    # Clean up any subreddits that are now floating alone
     G.remove_nodes_from(list(nx.isolates(G)))
 
     if G.number_of_nodes() == 0:
         return {"nodes": [], "links": []}
 
-    centrality = nx.betweenness_centrality(G, weight='weight')
+    # Now run the math ONLY on the actual bridges
+    centrality = nx.betweenness_centrality(G)
 
-    sorted_nodes = sorted(centrality.items(), key=lambda x: x[1], reverse=True)
+    # Sort authors by influence
+    sorted_authors = sorted(
+        [n for n in G.nodes if G.nodes[n]['type'] == 'author'], 
+        key=lambda x: centrality.get(x, 0), 
+        reverse=True
+    )
     
-    top_nodes = set([node for node, score in sorted_nodes[:50]])
+    # Grab Top 50 Authors
+    top_50_authors = set(sorted_authors[:50])
     
-    subgraph = G.subgraph(top_nodes)
+    # Grab the exact subreddits they bridge
+    final_nodes = set(top_50_authors)
+    for author in top_50_authors:
+        final_nodes.update(G.neighbors(author))
+        
+    subgraph = G.subgraph(final_nodes)
 
-    nodes = [{"id": node, "val": centrality[node]} for node in subgraph.nodes()]
+    nodes = [{"id": n, "val": centrality.get(n, 0), "group": G.nodes[n]['type']} for n in subgraph.nodes()]
     links = [{"source": u, "target": v, "weight": d['weight']} for u, v, d in subgraph.edges(data=True)]
 
     return {"nodes": nodes, "links": links}
