@@ -24,11 +24,13 @@ def clean_text(text):
 
 def generate_topic_trends(df, model, num_clusters=4):
     try:
-        if len(df) < num_clusters:
+        if len(df) == 0:
             return {"labels": [], "datasets": [], "top_themes": []}
 
         df = df.copy()
         
+        actual_clusters = min(num_clusters, len(df))
+
         titles = df['title'].apply(clean_text)
         texts = df['selftext'].apply(clean_text)
         combined_texts = (titles + " " + texts).tolist()
@@ -38,13 +40,19 @@ def generate_topic_trends(df, model, num_clusters=4):
         try:
             tfidf_matrix = vectorizer.fit_transform(combined_texts)
             scores = tfidf_matrix.sum(axis=0).A1
-            top_indices = scores.argsort()[-num_clusters:][::-1]
+            
+            actual_clusters = min(actual_clusters, len(scores))
+            
+            if actual_clusters == 0:
+                return {"labels": [], "datasets": [], "top_themes": []}
+                
+            top_indices = scores.argsort()[-actual_clusters:][::-1]
             feature_names = vectorizer.get_feature_names_out()
             suggested_words = [feature_names[idx] for idx in top_indices]
         except Exception:
-            suggested_words = [f"Theme {i+1}" for i in range(num_clusters)]
+            suggested_words = [f"Theme {i+1}" for i in range(actual_clusters)]
 
-        if len(suggested_words) < num_clusters:
+        if len(suggested_words) == 0:
             return {"labels": [], "datasets": [], "top_themes": []}
 
         theme_embeddings = model.encode(suggested_words, show_progress_bar=False)
@@ -54,8 +62,8 @@ def generate_topic_trends(df, model, num_clusters=4):
         
         df['cluster_id'] = np.argmax(similarities, axis=1)
 
-        cluster_names = {i: suggested_words[i].title() for i in range(num_clusters)}
-        top_themes_list = [cluster_names[i] for i in range(num_clusters)]
+        cluster_names = {i: suggested_words[i].title() for i in range(actual_clusters)}
+        top_themes_list = [cluster_names[i] for i in range(actual_clusters)]
 
         df['date'] = pd.to_datetime(df.get('date', pd.Series()), errors='coerce')
         df = df.dropna(subset=['date'])

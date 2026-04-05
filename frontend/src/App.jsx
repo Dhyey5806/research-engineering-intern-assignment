@@ -10,6 +10,7 @@ import ChatBot from './components/ChatBot';
 
 function App() {
   const [query, setQuery] = useState('');
+  const [source, setSource] = useState('reddit');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [clusterCount, setClusterCount] = useState(4);
@@ -24,17 +25,35 @@ function App() {
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const handleSourceToggle = (newSource) => {
+    if (source === newSource) return; 
+    
+    setSource(newSource);
+    
+    setResults([]);
+    setGraphData({ nodes: [], links: [] });
+    setTopicData(null);
+    setSummaries({});
+    setWarning(null);
+    setError(null);
+    setQuery(''); 
+    setStartDate('');
+    setEndDate('');
+  };
+
   const handleSearch = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (!query.trim()) return;
+    
     setLoading(true);
     setError(null);
     setWarning(null);
     setTopicData(null); 
     
     try {
-      const data = await fetchSearchResults(query, startDate, endDate, 200);
-      setResults(data.results);
-      setGraphData(data.graph);
+      const data = await fetchSearchResults(query, startDate, endDate, 200, source);
+      setResults(data.results || []);
+      setGraphData(data.graph || { nodes: [], links: [] });
       setSummaries(data.summaries || {});
       setWarning(data.warning || null);
     } catch (err) {
@@ -48,7 +67,7 @@ function App() {
   const handleLoadTopics = async () => {
     setTopicsLoading(true);
     try {
-      const data = await fetchTopicTrends(query, startDate, endDate, 200, clusterCount);
+      const data = await fetchTopicTrends(query, startDate, endDate, 200, clusterCount, source);
       setTopicData(data.topics);
       setSummaries(prev => ({ ...prev, topics: data.topic_summary }));
     } catch (err) {
@@ -63,7 +82,7 @@ function App() {
     setClusterCount(newClusterCount);
     setTopicsLoading(true);
     try {
-      const data = await fetchTopicTrends(query, startDate, endDate, 200, newClusterCount);
+      const data = await fetchTopicTrends(query, startDate, endDate, 200, newClusterCount, source);
       setTopicData(data.topics);
       setSummaries(prev => ({ ...prev, topics: data.topic_summary }));
     } catch (err) {
@@ -79,8 +98,27 @@ function App() {
 
   return (
     <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1 style={{ color: '#333' }}>SimPPL Investigative Dashboard</h1>
+      <h1 style={{ color: '#333', textAlign: 'center', marginBottom: '1.5rem' }}>SimPPL Investigative Dashboard</h1>
       
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '25px' }}>
+        <div style={{ display: 'flex', backgroundColor: '#e2e8f0', borderRadius: '8px', padding: '4px' }}>
+          <button
+            type="button" 
+            onClick={() => handleSourceToggle('reddit')}
+            style={{ padding: '8px 24px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: source === 'reddit' ? '#ffffff' : 'transparent', color: source === 'reddit' ? '#3182ce' : '#718096', boxShadow: source === 'reddit' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}
+          >
+            Reddit Analysis
+          </button>
+          <button
+            type="button" 
+            onClick={() => handleSourceToggle('news')}
+            style={{ padding: '8px 24px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', backgroundColor: source === 'news' ? '#ffffff' : 'transparent', color: source === 'news' ? '#3182ce' : '#718096', boxShadow: source === 'news' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}
+          >
+            Global News API
+          </button>
+        </div>
+      </div>
+
       <SearchBar 
         query={query} 
         setQuery={setQuery} 
@@ -90,9 +128,10 @@ function App() {
         setEndDate={setEndDate}
         onSearch={handleSearch} 
         loading={loading} 
+        source={source} 
       />
 
-      {error && <p style={{ color: '#e53e3e', fontWeight: 'bold' }}>{error}</p>}
+      {error && <p style={{ color: '#e53e3e', fontWeight: 'bold', textAlign: 'center' }}>{error}</p>}
       {warning && (
         <div style={{ backgroundColor: '#fffaf0', color: '#dd6b20', padding: '15px', borderRadius: '8px', border: '1px solid #feebc8', marginBottom: '20px', fontWeight: 'bold' }}>
           [!] {warning}
@@ -102,12 +141,16 @@ function App() {
       {results.length > 0 && !loading && (
         <div>
           <h3 style={{ color: '#555', marginBottom: '2rem', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
-            Showing {results.length} semantic matches for "{query}"
+            Showing {results.length} semantic matches for "{query}" from {source === 'reddit' ? 'Reddit' : 'Global News'}
           </h3>
           
           <TimelineChart data={timelineData} rawResults={results} summaryText={summaries.timeline} />
           <CommunityChart data={subredditData} summaryText={summaries.community} />
-          <NetworkGraph graphData={graphData} summaryText={summaries.network} />
+          
+          {/* THE FIX: Only render the Network Graph if the source is Reddit */}
+          {source === 'reddit' && (
+            <NetworkGraph graphData={graphData} summaryText={summaries.network} />
+          )}
 
           <div style={{ marginTop: '3rem', padding: '2rem', backgroundColor: '#f8f9fa', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
             {!topicData ? (
@@ -128,6 +171,7 @@ function App() {
                 summaryText={summaries.topics} 
                 onClusterChange={handleClusterChange}
                 currentClusters={clusterCount}
+                loading={topicsLoading} 
               />
             )}
           </div>

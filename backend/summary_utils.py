@@ -30,14 +30,12 @@ def get_deepseek_json(prompt):
                     "content": prompt
                 }
             ],
-            temperature=0.0, # Forces deterministic, robotic output
-            max_tokens=250,  # ECONOMIC GUARDRAIL: Prevents 402 Token Limit Errors
+            temperature=0.0,
+            max_tokens=250, 
             extra_body={"reasoning": {"enabled": False}} 
         )
         content = response.choices[0].message.content.strip()
         
-        # BULLETPROOF JSON EXTRACTOR using Regex
-        # This rips out the JSON object even if the LLM surrounds it with conversational garbage
         match = re.search(r'\{.*\}', content, re.DOTALL)
         if match:
             json_str = match.group(0)
@@ -50,7 +48,7 @@ def get_deepseek_json(prompt):
         print(f"DEEPSEEK API ERROR: {str(e)}")
         return None
 
-def generate_main_summaries(df, query):
+def generate_main_summaries(df, query, source="reddit"):
     fallback = {
         "timeline": "Unable to generate AI analysis. Check backend console for API limits.", 
         "community": "Unable to generate AI analysis. Check backend console for API limits."
@@ -64,26 +62,35 @@ def generate_main_summaries(df, query):
     df_copy = df_copy.dropna(subset=['date'])
     
     if len(df_copy) > 0:
-        total_posts = len(df_copy)
+        total_items = len(df_copy)
         top_months = df_copy['date'].dt.strftime('%Y-%m').value_counts().head(3).to_dict()
     else:
-        total_posts = 0
+        total_items = 0
         top_months = {"Unknown": 0}
 
-    top_subs = df['subreddit'].value_counts().head(3).to_dict() if 'subreddit' in df else {"Unknown": 0}
+    top_groups = df['subreddit'].value_counts().head(3).to_dict() if 'subreddit' in df else {"Unknown": 0}
+
+    if source == "news":
+        item_name = "articles"
+        group_name = "News Portals/Publishers"
+        context_rule = "Do NOT use the word 'subreddit' or 'post'. These are mainstream news articles published by news agencies."
+    else:
+        item_name = "posts"
+        group_name = "Communities (Subreddits)"
+        context_rule = "These are social media posts originating from specific Reddit communities."
 
     prompt = f"""
     Analyze this exact aggregated data for the target narrative: '{query}'.
-    - Total Posts Analyzed: {total_posts}
+    - Total {item_name.capitalize()} Analyzed: {total_items}
     - Top 3 Months by Volume (YYYY-MM: Count): {json.dumps(top_months)}
-    - Top 3 Amplifying Communities (Subreddit: Count): {json.dumps(top_subs)}
+    - Top 3 Amplifying {group_name} (Name: Count): {json.dumps(top_groups)}
     
     Task: Write an executive summary. Return a JSON object with exactly two keys: "timeline" and "community". 
     Each value must be exactly ONE professional, highly analytical sentence.
     
     Directives:
-    "timeline": State the absolute peak month and volume based STRICTLY on the numbers provided above. Analyze the velocity of this spike. Do NOT invent numbers. Ensure the volume explicitly matches the monthly count.
-    "community": Explain the strategic significance of the top communities incubating this narrative based on the counts provided.
+    "timeline": State the absolute peak month and volume based STRICTLY on the numbers provided above. Use the word '{item_name}'. Do NOT invent numbers.
+    "community": Explain the strategic significance of the top entities incubating this narrative based on the counts provided. {context_rule}
     """
     
     res = get_deepseek_json(prompt)
