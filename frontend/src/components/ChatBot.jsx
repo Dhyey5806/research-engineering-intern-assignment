@@ -13,7 +13,7 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isLoading]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -22,6 +22,11 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
     const userMessage = { role: 'user', content: input };
     const updatedHistory = [...messages, userMessage];
     
+    const cleanHistory = updatedHistory.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
     setMessages(updatedHistory);
     setInput('');
     setIsLoading(true);
@@ -31,7 +36,7 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          history: updatedHistory,
+          history: cleanHistory,
           context: rawResults,
           timeline_data: timelineData || {},
           subreddit_data: subredditData || {},
@@ -43,9 +48,15 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
       if (!response.ok) throw new Error('Network response was not ok');
       
       const data = await response.json();
-      setMessages([...updatedHistory, { role: 'assistant', content: data.response }]);
+      
+      // Safely parse the JSON response from the backend
+      const aiResponse = data.response;
+      const answer = typeof aiResponse === 'object' ? aiResponse.answer : aiResponse;
+      const suggestions = typeof aiResponse === 'object' ? (aiResponse.suggestions || []) : [];
+
+      setMessages([...updatedHistory, { role: 'assistant', content: answer, suggestions: suggestions }]);
     } catch (error) {
-      setMessages([...updatedHistory, { role: 'assistant', content: "Connection error. Please try again." }]);
+      setMessages([...updatedHistory, { role: 'assistant', content: "Connection error. Please try again.", suggestions: [] }]);
     } finally {
       setIsLoading(false);
     }
@@ -65,16 +76,36 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
               <p style={{ textAlign: 'center', color: '#718096', fontSize: '14px', marginTop: '20px' }}>Run a search first to load data into the agent's memory.</p>
             ) : (
               messages.map((msg, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: '10px' }}>
-                  <div style={{ maxWidth: '85%', padding: '12px 16px', borderRadius: '18px', backgroundColor: msg.role === 'user' ? '#3182ce' : '#e2e8f0', color: msg.role === 'user' ? '#ffffff' : '#2d3748', fontSize: '14px', lineHeight: '1.5' }}>
-                    {msg.content}
+                <div key={idx} style={{ marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: '8px' }}>
+                    <div style={{ maxWidth: '85%', padding: '12px 16px', borderRadius: '18px', backgroundColor: msg.role === 'user' ? '#3182ce' : '#ffffff', color: msg.role === 'user' ? '#ffffff' : '#2d3748', border: msg.role === 'assistant' ? '1px solid #e2e8f0' : 'none', fontSize: '14px', lineHeight: '1.5', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                      {msg.content}
+                    </div>
                   </div>
+                  
+                  {/* NEW: Render Suggestion Pills ONLY for the last AI message, and hide when loading */}
+                  {msg.role === 'assistant' && msg.suggestions && msg.suggestions.length > 0 && idx === messages.length - 1 && !isLoading && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginLeft: '5px', marginTop: '5px' }}>
+                      {msg.suggestions.map((sug, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setInput(sug)} // Instantly populates the input box!
+                          style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: '#edf2f7', color: '#4a5568', border: '1px solid #cbd5e0', borderRadius: '16px', cursor: 'pointer', transition: 'background-color 0.2s', textAlign: 'left' }}
+                          onMouseOver={(e) => e.target.style.backgroundColor = '#e2e8f0'}
+                          onMouseOut={(e) => e.target.style.backgroundColor = '#edf2f7'}
+                        >
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))
             )}
+            
             {isLoading && (
               <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' }}>
-                <div style={{ padding: '12px 16px', borderRadius: '18px', backgroundColor: '#e2e8f0', color: '#718096', fontSize: '14px' }}>Analyzing data...</div>
+                <div style={{ padding: '12px 16px', borderRadius: '18px', backgroundColor: '#ffffff', color: '#718096', border: '1px solid #e2e8f0', fontSize: '14px' }}>Analyzing data...</div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -89,7 +120,7 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
               disabled={rawResults.length === 0 || isLoading}
               style={{ flex: 1, padding: '12px', borderRadius: '24px', border: '1px solid #cbd5e0', outline: 'none', fontSize: '14px' }}
             />
-            <button type="submit" disabled={rawResults.length === 0 || isLoading} style={{ marginLeft: '10px', padding: '10px 20px', backgroundColor: '#3182ce', color: '#ffffff', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
+            <button type="submit" disabled={rawResults.length === 0 || isLoading || !input.trim()} style={{ marginLeft: '10px', padding: '10px 20px', backgroundColor: (!input.trim() || isLoading) ? '#a0aec0' : '#3182ce', color: '#ffffff', border: 'none', borderRadius: '24px', cursor: (!input.trim() || isLoading) ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: '0.2s' }}>
               Send
             </button>
           </form>

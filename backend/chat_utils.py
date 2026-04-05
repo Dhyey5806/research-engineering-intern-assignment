@@ -1,18 +1,19 @@
 import os
 import json
+import re
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 def get_chat_response(history, context_posts, timeline_data, subreddit_data, graph_data, topic_data):
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
-        return "API Key missing."
+        return {"answer": "API Key missing.", "suggestions": []}
 
     llm = ChatOpenAI(
         model="deepseek/deepseek-chat",
         api_key=api_key,
         base_url="https://openrouter.ai/api/v1",
-        max_tokens=1500,
+        max_tokens=400,
         temperature=0.0
     )
 
@@ -36,10 +37,10 @@ def get_chat_response(history, context_posts, timeline_data, subreddit_data, gra
     """
 
     safe_posts = []
-    for p in context_posts[:75]:
+    for p in context_posts[:30]:
         text = str(p.get('selftext', 'N/A'))
-        if text != 'N/A' and len(text) > 800:
-            text = text[:800] + "... [TRUNCATED]"
+        if text != 'N/A' and len(text) > 400:
+            text = text[:400] + "... [TRUNCATED]"
         
         safe_posts.append(f"Author: {p.get('author', 'N/A')} | Subreddit: {p.get('subreddit', 'N/A')} | Date: {p.get('date', 'N/A')} | Title: {p.get('title', 'N/A')} | Text: {text}")
 
@@ -48,10 +49,14 @@ def get_chat_response(history, context_posts, timeline_data, subreddit_data, gra
     system_prompt = f"""You are an elite, authoritative Intelligence Analyst. You suffer from complete amnesia regarding any external world knowledge.
 
 CRITICAL DIRECTIVES:
-1. NO MARKDOWN: You MUST NOT use any markdown formatting. Do not use asterisks, hashtags, or backticks. Use plain text, standard paragraph breaks, and standard numbering (1, 2, 3) for lists.
-2. AUTHORITATIVE VOICING: NEVER use phrases like "based on the dataset", "according to the metrics", "the raw data shows", or "in the text provided". Speak authoritatively as if you inherently know the facts. Present the findings directly.
-3. INFORMATION BOUNDARIES: Answer questions using ONLY the provided metrics and context below. Do not guess or use external knowledge.
-4. MISSING INFORMATION: If the user asks about a topic not explicitly proven by the information below, you MUST reply exactly with: "I do not have intelligence on this specific topic."
+1. OUTPUT FORMAT: You MUST return a valid JSON object. Do NOT use markdown code blocks (e.g., ```json). Just return the raw JSON.
+2. JSON SCHEMA: Your output must exactly match this structure:
+   {{
+      "answer": "Your direct, authoritative response in plain text. NO MARKDOWN.",
+      "suggestions": ["Follow up question 1?", "Follow up question 2?"]
+   }}
+3. AUTHORITATIVE VOICING: NEVER use phrases like "based on the dataset". Speak authoritatively.
+4. OUT OF SCOPE / MISSING INFO: If the user asks about a topic not explicitly proven below, you MUST set "answer" to "I do not have intelligence on this specific topic." and set "suggestions" to an empty array [].
 
 AGGREGATED METRICS:
 {agg_str}
@@ -62,15 +67,29 @@ RAW CONTEXT:
     messages.append(SystemMessage(content=system_prompt))
 
     for msg in history:
+        # We only pass the text history back to the LLM so it doesn't get confused by previous JSONs
         if msg.get("role") == "user":
             messages.append(HumanMessage(content=msg.get("content")))
         elif msg.get("role") == "assistant":
-            messages.append(AIMessage(content=msg.get("content")))
+            # If the history contains previous answers, just extract the string to maintain conversation flow
+            content = msg.get("content")
+            if isinstance(content, dict):
+                content = content.get("answer", "")
+            messages.append(AIMessage(content=str(content)))
 
     try:
         response = llm.invoke(messages)
-        return response.content
+        content = response.content.strip()
+        
+        # BULLETPROOF JSON EXTRACTOR
+        match = re.search(r'\{.*\}', content, re.DOTALL)
+        if match:
+            return json.loads(match.group(0))
+        else:
+            print(f"CHAT JSON PARSE FAILED. Raw: {content}")
+            return {"answer": content, "suggestions": []}
+            
     except Exception as e:
         if "402" in str(e) or "limit exceeded" in str(e).lower():
-            return "System Error: The conversation history has exceeded the memory capacity. Please clear the chat."
-        return f"Agent Error: {str(e)}"
+            return {"answer": "System Error: Memory capacity exceeded. Please clear the chat.", "suggestions": []}
+        return {"answer": f"Agent Error: {str(e)}", "suggestions": []}
