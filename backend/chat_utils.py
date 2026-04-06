@@ -37,7 +37,7 @@ def get_chat_response(history, context_posts, timeline_data, subreddit_data, gra
     """
 
     safe_posts = []
-    for p in context_posts[:30]:
+    for p in context_posts[:5]:
         text = str(p.get('selftext', 'N/A'))
         if text != 'N/A' and len(text) > 400:
             text = text[:400] + "... [TRUNCATED]"
@@ -65,13 +65,12 @@ RAW CONTEXT:
 {context_str}"""
     
     messages.append(SystemMessage(content=system_prompt))
+    recent_history = history[-6:] if len(history) > 6 else history
 
-    for msg in history:
-        # We only pass the text history back to the LLM so it doesn't get confused by previous JSONs
+    for msg in recent_history:
         if msg.get("role") == "user":
             messages.append(HumanMessage(content=msg.get("content")))
         elif msg.get("role") == "assistant":
-            # If the history contains previous answers, just extract the string to maintain conversation flow
             content = msg.get("content")
             if isinstance(content, dict):
                 content = content.get("answer", "")
@@ -81,7 +80,6 @@ RAW CONTEXT:
         response = llm.invoke(messages)
         content = response.content.strip()
         
-        # BULLETPROOF JSON EXTRACTOR
         match = re.search(r'\{.*\}', content, re.DOTALL)
         if match:
             return json.loads(match.group(0))
@@ -90,6 +88,9 @@ RAW CONTEXT:
             return {"answer": content, "suggestions": []}
             
     except Exception as e:
-        if "402" in str(e) or "limit exceeded" in str(e).lower():
-            return {"answer": "System Error: Memory capacity exceeded. Please clear the chat.", "suggestions": []}
+        error_msg = str(e).lower()
+        if "402" in error_msg or "balance" in error_msg:
+            return {"answer": "API Error: OpenRouter API key balance is $0.00.", "suggestions": []}
+        elif "limit exceeded" in error_msg or "context_length" in error_msg:
+            return {"answer": "System Error: Memory capacity exceeded despite sliding window. Try refreshing the page.", "suggestions": []}
         return {"answer": f"Agent Error: {str(e)}", "suggestions": []}

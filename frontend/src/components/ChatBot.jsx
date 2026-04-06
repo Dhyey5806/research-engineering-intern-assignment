@@ -65,21 +65,22 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
       {isOpen && (
         <div
-          className="w-[420px] h-[560px] rounded-2xl border border-border bg-card flex flex-col overflow-hidden"
+          /* THE FIX: Added dynamic width and max-h-[calc(100vh-130px)] to prevent cutting off on small screens */
+          className="w-[calc(100vw-3rem)] sm:w-[420px] h-[560px] max-h-[calc(100vh-130px)] rounded-2xl border border-border bg-card flex flex-col overflow-hidden"
           style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)' }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border" style={{ background: 'hsl(222, 47%, 11%)' }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0" style={{ background: 'hsl(222, 47%, 11%)' }}>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(160, 84%, 39%)' }}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'hsl(160, 84%, 39%)' }}>
                 <Sparkles className="w-4 h-4" style={{ color: 'white' }} />
               </div>
               <div>
-                <h3 className="text-sm font-semibold" style={{ color: 'hsl(210, 40%, 98%)' }}>EchoScope Intelligence Agent</h3>
-                <p className="text-xs" style={{ color: 'hsl(215, 14%, 63%)' }}>Contextual analysis powered by AI</p>
+                <h3 className="text-sm font-semibold leading-tight" style={{ color: 'hsl(210, 40%, 98%)' }}>EchoScope Intelligence Agent</h3>
+                <p className="text-xs mt-0.5" style={{ color: 'hsl(215, 14%, 63%)' }}>Contextual analysis powered by AI</p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="p-1 rounded-md transition-colors" style={{ color: 'hsl(215, 14%, 63%)' }}>
+            <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-md transition-colors hover:bg-white/10 shrink-0" style={{ color: 'hsl(215, 14%, 63%)' }}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -121,7 +122,7 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
                           <button
                             key={i}
                             onClick={() => setInput(sug)}
-                            className="px-3 py-1.5 text-xs rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            className="px-3 py-1.5 text-xs rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground text-left"
                           >
                             {sug}
                           </button>
@@ -157,7 +158,7 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
           </div>
 
           {/* Input */}
-          <form onSubmit={handleSend} className="p-4 border-t border-border">
+          <form onSubmit={handleSend} className="p-4 border-t border-border shrink-0 bg-card">
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -165,12 +166,12 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about engagement, entities, or signals..."
                 disabled={rawResults.length === 0 || isLoading}
-                className="echo-input flex-1"
+                className="echo-input flex-1 min-w-0"
               />
               <button
                 type="submit"
                 disabled={rawResults.length === 0 || isLoading || !input.trim()}
-                className="echo-btn-accent p-2.5 rounded-lg"
+                className="echo-btn-accent p-2.5 rounded-lg shrink-0"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -182,7 +183,7 @@ const ChatBot = ({ rawResults, timelineData, subredditData, graphData, topicData
       {/* Floating button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
+        className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 shrink-0"
         style={{
           background: 'linear-gradient(135deg, hsl(222, 47%, 11%), hsl(217, 33%, 17%))',
           boxShadow: '0 8px 25px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05)',
