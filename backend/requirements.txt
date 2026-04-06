@@ -1,6 +1,11 @@
 fastapi
 uvicorn
 pandas
-sentence-transformers
-faiss-cpu
 numpy
+faiss-cpu
+sentence-transformers
+scikit-learn
+umap-learn
+datamapplot
+requests
+pydantic
