@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './dashboard.css'; // MUST IMPORT HERE
+import './dashboard.css'; 
 import SearchBar from './components/SearchBar';
 import TimelineChart from './components/TimelineChart';
 import CommunityChart from './components/CommunityChart';
@@ -101,11 +101,22 @@ function App() {
             <h1 className="header-title">Narrative-Analyser</h1>
             <p className="header-subtitle">Investigative Intelligence Dashboard</p>
           </div>
-          
         </div>
       </header>
 
       <main className="dashboard-main">
+        
+        {/* --- NEW: Premium Hero Instructions --- */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem', marginTop: '1rem', animation: 'fadeIn 0.5s ease-in' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#0f172a', margin: '0 0 10px 0', letterSpacing: '-0.3px' }}>
+            Configure Target Data Stream
+          </h2>
+          <p style={{ fontSize: '15px', color: '#64748b', maxWidth: '680px', margin: '0 auto', lineHeight: '1.6' }}>
+            Select <strong style={{ color: '#0f172a', fontWeight: '600' }}>Reddit Archive</strong> to analyze historical narrative patterns within the curated local dataset, or deploy <strong style={{ color: '#10b981', fontWeight: '600' }}>Global News Analysis</strong> to track emerging signals across live, real-time media feeds.
+          </p>
+        </div>
+        {/* -------------------------------------- */}
+
         <div className="toggle-wrapper">
           <div className="toggle-group">
             <button

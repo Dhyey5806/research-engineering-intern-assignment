@@ -116,7 +116,6 @@ const TopicTrendsChart = ({ data, summaryText, onClusterChange, currentClusters,
         </button>
       </div>
 
-      {/* Summaries */}
       {summaryText && (
         <div className="mb-4 p-4 rounded-lg bg-muted/50 border border-border">
           <div className="flex items-center gap-2 mb-2">
@@ -126,17 +125,58 @@ const TopicTrendsChart = ({ data, summaryText, onClusterChange, currentClusters,
         </div>
       )}
 
-      <div style={{ height: '400px' }}>
+      {/* RENDER THE SELECTED VIEW */}
+      <div style={{ height: '550px', width: '100%', position: 'relative', opacity: loading ? 0.5 : 1, transition: 'opacity 0.3s' }}>
         {viewMode === 'chart' ? (
           <Line data={data} options={options} />
         ) : (
-          <div className="flex items-center justify-center h-full rounded-lg bg-muted/20 border border-border">
-            <div className="text-center">
-              <Map className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">UMAP Embedding Visualization</p>
-              <p className="text-xs text-muted-foreground mt-1">Requires backend datamapplot rendering</p>
+          data.datamap_html ? (
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              
+              {/* THE FIX: Floating Controls Container (Right Side) */}
+              <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '12px', width: '220px' }}>
+                
+                {/* The UX Hint */}
+                <div style={{ backgroundColor: 'rgba(15, 23, 42, 0.85)', color: '#ffffff', padding: '10px 16px', borderRadius: '12px', fontSize: '12px', fontWeight: '600', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', textAlign: 'center' }}>
+                  💡 Double-click to quick-zoom
+                </div>
+
+                {/* The New Dynamic Legend */}
+                <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)', maxHeight: '350px', overflowY: 'auto' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Cluster Legend
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {/* Maps over the exact data we use for the timeline chart to build the legend */}
+                    {data.datasets.map((dataset, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: dataset.borderColor, flexShrink: 0, boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}></div>
+                        <span style={{ fontSize: '13px', color: '#0f172a', fontWeight: '500', lineHeight: '1.2' }}>
+                          {dataset.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+
+              <iframe 
+                srcDoc={data.datamap_html} 
+                style={{ width: '100%', height: '100%', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#ffffff' }}
+                title="Datamapplot Embeddings"
+                sandbox="allow-scripts allow-same-origin"
+              />
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center justify-center h-full rounded-lg bg-muted/20 border border-border">
+              <div className="text-center">
+                <Map className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">UMAP Embedding Visualization</p>
+                <p className="text-xs text-muted-foreground mt-1">No embedding data available.</p>
+              </div>
+            </div>
+          )
         )}
       </div>
     </div>

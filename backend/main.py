@@ -154,7 +154,7 @@ async def get_topics(query: str = "", source: str = "reddit", limit: int = 200, 
         else:
             query_vector = model.encode([clean_query])
             
-            D, I = index.search(query_vector, limit) 
+            D, I = index.search(query_vector, 2000) 
             valid_indices = [idx for idx in I[0] if idx != -1]
             
             if not valid_indices:
