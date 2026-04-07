@@ -4,6 +4,9 @@
 [![Live API](https://img.shields.io/badge/Backend-Hugging_Face-yellow?style=for-the-badge&logo=huggingface)](https://huggingface.co/spaces/d151617/narrative-intelligence-api/tree/main) 
 [![Video Walkthrough](https://img.shields.io/badge/System_Walkthrough-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/j2MZIDp3elQ?si=u-VOcF97pkw6y-Gd) 
 
+* **Demo:** https://research-engineering-intern-assignm-ten.vercel.app/ 
+* **Video Demo:** https://www.youtube.com/watch?si=u-VOcF97pkw6y-Gd&v=j2MZIDp3elQ&feature=youtu.be
+
 ## Abstract
 Narrative-Analyser is an end-to-end threat intelligence and digital narrative tracking platform. Moving beyond static keyword matching, this system leverages dense vector embeddings, bipartite network analysis, and Large Language Models to trace how information propagates across isolated social communities and global media syndicates. 
 
