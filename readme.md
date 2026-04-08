@@ -4,7 +4,8 @@
 [![Live API](https://img.shields.io/badge/Backend-Hugging_Face-yellow?style=for-the-badge&logo=huggingface)](https://huggingface.co/spaces/d151617/narrative-intelligence-api/tree/main) 
 [![Video Walkthrough](https://img.shields.io/badge/System_Walkthrough-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/j2MZIDp3elQ?si=u-VOcF97pkw6y-Gd) 
 
-* **Demo:** https://research-engineering-intern-assignm-ten.vercel.app/ 
+* **⚠️Warning:-** Output might get delayed because hugging face backend goes to inactive state after some time so for first response kindly wait and then it will work fine
+* **Demo:** https://research-engineering-intern-assignm-ten.vercel.app/
 * **Video Demo:** https://www.youtube.com/watch?si=u-VOcF97pkw6y-Gd&v=j2MZIDp3elQ&feature=youtu.be
 
 ## Abstract
